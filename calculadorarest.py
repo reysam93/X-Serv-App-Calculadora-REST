@@ -2,85 +2,112 @@
 # -*- coding: utf-8 -*-
 
 import webapp
+import random
 
 
 class restCalc(webapp.webApp):
 
     def __init__(self, hostname, port):
-        self.operation = None
+        self.operations = {}
         webapp.webApp.__init__(self, hostname, port)
 
-    def processGet(self):
-        if self.operation is None:
-            respond = "<html>No operation introduced</html>"
+    def processGet(self, resource):
+        resource = resource[1:]
+        if resource in self.operations:
+            operation = self.operations[resource]
+            code = "200 OK"
+            if operation is None:
+                respond = "<html>No operation introduced</html>"
+            else:
+                respond = "<html><body><p>" + operation + \
+                            "</p></body></html>"
         else:
-            respond = "<html><body><p>" + self.operation + "</p></body></html>"
-        return respond
+            id = str(random.randint(0,1000000))
+            while id in self.operations:
+                print "id repeated, generating new id"
+                id = str(random.randint(0,1000000))
+            print "ID: " + id
+            self.operations[id] = None
+            print "añadido", id
+            code = "200 OK"
+            respond = "<html><body><a href=" + id +">Tu operacion</a>\
+                        </body></html>"
+        return code, respond
 
-    def processPut(self, ops):
-        if ops.find("+") != -1:
+    def processPut(self, body, id):
+        id = id[1:]
+        print "PROCESS PUT ID:", id
+        if not id in self.operations:
+            return  "400 Error", "<html><body>Wrong ID</body></html>"
+        if body.find("+") != -1:
             try:
-                op1 = float(ops.split("+")[0])
-                op2 = float(ops.split("+")[1])
-                self.operation = str(op1) + " + " + str(op2) + " = " +\
+                op1 = float(body.split("+")[0])
+                op2 = float(body.split("+")[1])
+                self.operations[id] = str(op1) + " + " + str(op2) + " = " +\
                             str(op1 + op2)
                 code = "200 OK"
                 respond = ""
             except ValueError:
-                self.operation = None
+                self.operations[id] = None
                 code = "400 Error"
                 respond = "<html><body>Only numbers</body></html>"
-        elif ops.find("-") != -1:
+        elif body.find("-") != -1:
             try:
-                op1 = float(ops.split("-")[0])
-                op2 = float(ops.split("-")[1])
-                self.operation = str(op1) + " - " + str(op2) + " = " +\
+                op1 = float(body.split("-")[0])
+                op2 = float(body.split("-")[1])
+                self.operations[id] = str(op1) + " - " + str(op2) + " = " +\
                             str(op1 - op2)
                 code = "200 OK"
                 respond = ""
             except ValueError:
-                self.operation = None
+                self.operations[id] = None
                 code = "400 Error"
                 respond = "<html><body>Only numbers</body></html>"
-        elif ops.find("*") != -1:
+        elif body.find("*") != -1:
             try:
-                op1 = float(ops.split("*")[0])
-                op2 = float(ops.split("*")[1])
-                self.operation = str(op1) + " * " + str(op2) + " = " +\
+                op1 = float(body.split("*")[0])
+                op2 = float(body.split("*")[1])
+                self.operations[id] = str(op1) + " * " + str(op2) + " = " +\
                             str(op1 * op2)
                 code = "200 OK"
                 respond = ""
             except ValueError:
-                self.operation = None
+                self.operations[id] = None
                 code = "400 Error"
                 respond = "<html><body>Only numbers</body></html>"
-        elif ops.find("/") != -1:
+        elif body.find("/") != -1:
             try:
-                op1 = float(ops.split("/")[0])
-                op2 = float(ops.split("/")[1])
-                self.operation = str(op1) + " / " + str(op2) + " = " +\
+                op1 = float(body.split("/")[0])
+                op2 = float(body.split("/")[1])
+                self.operations[id] = str(op1) + " / " + str(op2) + " = " +\
                             str(op1 / op2)
                 code = "200 OK"
                 respond = ""
             except ValueError:
-                self.operation = None
                 code = "400 Error"
                 respond = "<html><body>Only numbers</body></html>"
         else:
             self.operation = None
+            code = "400"
+            respond = "<html><body>wrong operation</body></html>"
         return code, respond
 
     def parse(self, request):
         print request
-        parsedRequest = [request.split()[0], request.split()[-1]]
-        return parsedRequest
+        method = request.split()[0]
+        resource = request.split()[1]
+        if method == "PUT":
+            body = request.split()[-1]
+        else:
+            body = ""
+        return (method, resource, body)
 
     def process(self, request):
-        if request[0] == "GET":
-            code = "200 OK"
-            respond = self.processGet()
+        (method, resource, body) = request
+        if method == "GET":
+            code, respond = self.processGet(resource)
         elif request[0] == "PUT":
-            (code, respond) = self.processPut(request[1])
+            (code, respond) = self.processPut(body, resource)
         else:
             code = "400 Error" 
             respond = "<html><h1>WRONG REQUEST</h1></html>"
