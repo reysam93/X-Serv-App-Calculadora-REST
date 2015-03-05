@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import webapp
-import random
 
 
 class restCalc(webapp.webApp):
 
     def __init__(self, hostname, port):
         self.operations = {}
+        self.ids = 0
         webapp.webApp.__init__(self, hostname, port)
 
     def processGet(self, resource):
@@ -22,11 +22,8 @@ class restCalc(webapp.webApp):
                 respond = "<html><body><p>" + operation + \
                             "</p></body></html>"
         else:
-            id = str(random.randint(0,1000000))
-            while id in self.operations:
-                print "id repeated, generating new id"
-                id = str(random.randint(0,1000000))
-            print "ID: " + id
+            self.ids += 1
+            id = str(self.ids)
             self.operations[id] = None
             print "añadido", id
             code = "200 OK"
